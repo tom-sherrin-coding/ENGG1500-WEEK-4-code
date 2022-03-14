@@ -1,0 +1,29 @@
+import machine
+from time import sleep
+from motor import Motor
+from ultrasonic import sonic
+
+motor_left = Motor("left", 11, 10, 7)
+motor_right = Motor("right", 8, 9, 6)
+
+while True:
+    motor_left.set_backwards()  # Set the left motor to run backwards
+    motor_left.duty(10)  # Set the left motor to 10% pvm
+    motor_right.set_backwards()  # Set the right motor to run backwards
+    motor_right.duty(10)  # Set the right motor to 10% pvm
+    sleep(0.5)          # Runs the motor for 0.5 seconds
+    sleep(0.5)          # Stops the motor for 0.5 seconds
+
+    motor_left.set_forwards()   # Set the left motor to run forwards
+    motor_left.duty(10)         # Set the left motor to 10% pvm
+    motor_right.set_backwards()  # Set the right motor to run backwards
+    motor_right.duty(10)        # Set the right motor to 10% pvm
+    sleep(2)               # Runs the motor for 2 seconds
+    sleep(1)                # Stops the motor for 1 second
+
+    motor_left.set_forwards()  # Set the left motor to run forwards
+    motor_left.duty(10)  # Set the left motor to 10% pvm
+    motor_right.set_forwards()  # Set the right motor to run forwards
+    motor_right.duty(10)  # Set the right motor to 10% pvm
+    sleep(2)            # Runs the motors for 2 seconds
+    sleep(1)            # Stops the motor for 1 second
