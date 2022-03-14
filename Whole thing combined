@@ -1,0 +1,160 @@
+from time import sleep
+ from motor import Motor
+
+ print("Hello, world!")
+
+ motor_left = Motor("left", 11, 10, 7)
+ motor_right = Motor("right", 8, 9, 6)
+
+ while True:
+     motor_left.set_forwards()   # Set the left motor to run forwards
+     motor_left.duty(50)         # Set the left motor to 50% pvm
+     motor_right.set_forwards()  # Set the right motor to run forwards
+     motor_right.duty(50)        # Set the right motor to 50% pvm
+
+     sleep(5)                    # Let the motors run forward for 5 seconds
+     motor_left.duty(0)          # Stop the left motor
+     motor_right.duty(0)         # Stop the right motor
+
+     sleep(5)                    # Let the motors remain stopped for 5 seconds
+
+     motor_left.set_backwards()   # Set the left motor to run backwards
+     motor_left.duty(100)         # Set the left motor to 100% pvm
+     motor_right.set_backwards()  # Set the right motor to run backwards
+     motor_right.duty(100)        # Set the right motor to 100% pvm
+
+     sleep(2.5)                   # Let the motors run for 2.5 seconds
+     motor_left.duty(0)           # Stop the left motor
+     motor_right.duty(0)          # Stop the right motor
+
+     sleep(2.5)                   # Stop the motors for 2.5 seconds
+
+ class Motor(object):
+     """ A ``motor`` object is used to control a DC motor using the L298N dual H-bridge.
+         The Motor class has methods to change the direction of the motor by setting
+         the IN1/IN2 pins:
+         - ``Motor.set_forwards()``
+         - ``Motor.set_backwards()``
+          and a method to change the duty cycle (0-100%) of the PWM output:
+        - ``Motor.duty(pwm)``
+         """
+
+     def __init__(self, side, in1_pin, in2_pin, en_pin):
+         """
+                 :rtype: object
+                 :type side: str
+                 :type in1_pin: str
+                 :type in2_pin: str
+                 :type en_pin: str
+                 The arguments are:
+                 - ``side``  should be the strings: "left" or "right". Used to specify motor.
+                 - ``in1_pin`` should be a valid Pin name string.
+                 - ``in2_pin`` should be a valid Pin name string
+                 - ``en_pin`` should be the strings: 6 or 7
+                 Usage Model::
+                 # Initialise motor instance
+                 left_motor = Motor("left", 8, 9, 7)
+                 # Set motor direction to forwards, and duty cycle to 70%
+                 left_motor.set_forwards()
+                 left_motor.duty(70)
+                 """
+
+         from machine import Pin
+         from machine import PWM
+         # Declare a variable to keep track of which motor is left/right
+         self.side = side
+         print("Initialising", self.side, "motor...")
+         # Declare GPIO pins for direction IN1 and IN2 pins
+         self.IN1 = Pin(in1_pin, Pin.OUT)
+         self.IN2 = Pin(in2_pin, Pin.OUT)
+         # Declare GPIO pins for PWM EN pin
+         self.EN = PWM(Pin(en_pin))
+
+         print("Motor", self.side, "initialised!")
+
+     def duty(self, pwm):
+         pwm_16 = 655*pwm
+         self.EN.duty_u16(pwm_16)
+         """ The duty cycle must be declared as a uint 16 variable between 0 and 65,535.
+             Therefore, to set the duty cycle to 100%, we set it to 65535.
+             """
+
+     def set_forwards(self):
+         if self.side == "left":
+             self.IN1.on()
+             self.IN2.off()
+         else:  # only other motor is the right motor
+             self.IN1.off()
+             self.IN2.on()
+
+     def set_backwards(self):
+         if self.side == "left":
+             self.IN1.off()
+             self.IN2.on()
+         else:
+             self.IN1.on()
+             self.IN2.off()
+
+ import machine
+ from machine import Pin
+ import time
+
+
+ class sonic:
+     """
+     A ``sonic`` object is used to control a HCSR04 ultrasonic sensor.
+     """
+
+     def __init__(self, trigger_pin, echo_pin, echo_timeout_us=4000*2/(340.29*1e-3)):
+         """
+         - trigger_pin: Output pin to send pulses
+         - echo_pin: Input pin listens for reflection to estimate time of flight.
+         - echo_timeout_us: Timeout in microseconds to listen to echo pin.
+         By default the timeout is set to the max range limit of the sensor, 4m
+         """
+         # Initialise constants
+         self.echo_timeout_us = int(echo_timeout_us)
+         self.speed_sound = 340.29  # m/s
+
+         # Initialise the TRIG output pin
+         self.trigger = Pin(trigger_pin, mode=Pin.OUT)
+         self.trigger.value(0)
+
+         # Initialise the ECHO input pin
+        self.echo = Pin(echo_pin, mode=Pin.IN)
+
+     def distance_mm(self):
+         """
+         Estimate distance to obstacle in front of the ultrasonic sensor in mm.
+         Sends a 10us pulse to 'trigger' pin and listens on 'echo' pin.
+         We use the method `machine.time_pulse_us()` to count the microseconds
+         passed before the echo is received.
+        The time of flight is used to calculate the estimated distance.
+         """
+         # Send a 10us HIGH pulse to trigger the ultrasonic burst
+         self.trigger.value(1)
+         time.sleep_us(10)
+         self.trigger.value(0)
+         # Read length of time pulse
+         duration = machine.time_pulse_us(self.echo, 1, self.echo_timeout_us)
+         # Calculate the distance in mm, based on the delay before we hear
+         # an echo and the constant speed of sound.
+         # Note: duration is halved as the audio wave must travel there and back.
+         mm = 0.5 * duration * 1e-6 * self.speed_sound * 1e3
+         return mm
+
+ import time
+ from ultrasonic import sonic
+
+ # Instead of a pin number 2 or 3 we can now write "TRIG" or "ECHO"
+ TRIG = 3
+ ECHO = 2
+ ultrasonic_sensor = sonic(TRIG, ECHO)
+
+ while True:
+     dist = ultrasonic_sensor.distance_mm()
+     if dist < 200:
+         # The code within this if-statement only gets executed
+         # if the distance measured is less than 200mm
+     print("Distance = {:6.2f} [mm]".format(dist))
+     time.sleep(0.1)
